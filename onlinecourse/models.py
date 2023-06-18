@@ -99,9 +99,7 @@ class Enrollment(models.Model):
 
 # <HINT> Create a Question Model with:
 
-    class Question(models.Model):
-        question_text = models.CharField(max_length=200)
-    grade_point = models.IntegerField()
+  
     # Used to persist question content for a course
     # Has a One-To-Many (or Many-To-Many if you want to reuse questions) relationship with course
     # Has a grade point for each question

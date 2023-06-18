@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment , Submission , Choice
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -104,13 +104,17 @@ def enroll(request, course_id):
 
 
 # <HINT> Create a submit view to create an exam submission record for a course enrollment,
-# you may implement it based on following logic:
-         # Get user and course object, then get the associated enrollment object created when the user enrolled the course
-         # Create a submission object referring to the enrollment
-         # Collect the selected choices from exam form
-         # Add each selected choice object to the submission object
-         # Redirect to show_exam_result with the submission id
-#def submit(request, course_id):
+
+def submit(request, course_id):
+    user = request.user
+    course = Course.objects.get(id=course_id)
+    enrollment = Enrollment.objects.get(user=user, course=course)
+    submission = Submission.objects.create(enrollment=enrollment)
+    choices = request.POST.getlist('choice')
+    for choice_id in choices:
+        choice = Choice.objects.get(id=choice_id)
+        submission.choices.add(choice)
+    return redirect('show_exam_result', submission.id)
 
 
 # <HINT> A example method to collect the selected choices from the exam form from the request object
@@ -131,6 +135,20 @@ def enroll(request, course_id):
         # For each selected choice, check if it is a correct answer or not
         # Calculate the total score
 #def show_exam_result(request, course_id, submission_id):
+def show_exam_result(request, course_id, submission_id):
+    course = Course.objects.get(id=course_id)
+    submission = Submission.objects.get(id=submission_id)
+    selected_ids = submission.choices.values_list('id', flat=True)
+    grade = 0
+    for question in course.questions.all():
+        if set(question.correct_choices.values_list('id', flat=True)) == set(selected_ids) & set(question.choices.values_list('id', flat=True)):
+            grade += question.grade
+    context = {
+        'course': course,
+        'selected_ids': selected_ids,
+        'grade': grade,
+    }
+    return render(request, 'show_exam_result.html', context)
 
 
 
